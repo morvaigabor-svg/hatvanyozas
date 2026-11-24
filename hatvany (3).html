@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hatványkifejezés-generátor</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --accent-bg: #eff6ff;
+      --ok: #16a34a;
+      --ok-bg: #f0fdf4;
+      --bad: #dc2626;
+      --bad-bg: #fef2f2;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    h1 {
+      font-size: 1.65rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+      margin-bottom: 1.25rem;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 0.75rem 1.25rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    button {
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 8px;
+      padding: 0.65rem 1.3rem;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      transition: all 0.15s ease;
+    }
+
+    button:hover {
+      background: #f1f5f9;
+    }
+
+    button.primary {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    button.primary:hover {
+      background: var(--primary-hover);
+    }
+
+    /* Szintválasztó */
+    .levels {
+      display: inline-flex;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .levels button {
+      border: none;
+      border-radius: 0;
+      padding: 0.5rem 1.1rem;
+      border-right: 1px solid var(--border);
+    }
+
+    .levels button:last-child {
+      border-right: none;
+    }
+
+    .levels button[aria-checked="true"] {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    /* Matematikai megjelenítés */
+    .formula-box {
+      background: var(--accent-bg);
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 1.75rem 1rem;
+      text-align: center;
+      font-size: 1.55rem;
+      font-family: "Cambria Math", "Times New Roman", serif;
+      overflow-x: auto;
+    }
+
+    .fraction {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      vertical-align: middle;
+    }
+
+    .numerator {
+      display: block;
+      border-bottom: 2px solid var(--text);
+      padding: 0 0.6rem 0.25rem;
+    }
+
+    .denominator {
+      display: block;
+      padding: 0.25rem 0.6rem 0;
+    }
+
+    sup {
+      font-size: 0.68em;
+      line-height: 0;
+    }
+
+    /* Saját válasz */
+    .answer-title {
+      font-size: 1.1rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .answer-hint {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    .answer-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem 0.4rem;
+      font-family: "Cambria Math", "Times New Roman", serif;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .ans-field {
+      display: inline-flex;
+      align-items: flex-start;
+    }
+
+    .ans-input {
+      width: 3.4rem;
+      margin: -0.35rem 0 0 0.1rem;
+      padding: 0.25rem 0.3rem;
+      font-family: inherit;
+      font-size: 1rem;
+      text-align: center;
+      border: 2px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--text);
+    }
+
+    .ans-input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .ans-input.ok {
+      border-color: var(--ok);
+      background: var(--ok-bg);
+    }
+
+    .ans-input.bad {
+      border-color: var(--bad);
+      background: var(--bad-bg);
+    }
+
+    .answer-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .answer-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.6rem;
+    }
+
+    .feedback {
+      min-height: 1.5rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .feedback.ok {
+      color: var(--ok);
+    }
+
+    .feedback.bad {
+      color: var(--bad);
+    }
+
+    /* Megoldás lépései */
+    .solution-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .solution-header h2 {
+      font-size: 1.1rem;
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .step {
+      padding: 0.85rem 1rem;
+      border-left: 3px solid var(--primary);
+      background: var(--bg);
+      border-radius: 0 8px 8px 0;
+    }
+
+    .step-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 0.4rem;
+    }
+
+    .step-math {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem 0.6rem;
+      font-family: "Cambria Math", "Times New Roman", serif;
+      font-size: 1.2rem;
+      overflow-x: auto;
+    }
+
+    .step-math + .step-math {
+      margin-top: 0.5rem;
+    }
+
+    .eq-sign {
+      color: var(--muted);
+    }
+
+    .zero {
+      opacity: 0.45;
+    }
+
+    .final {
+      background: var(--accent-bg);
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 0.2rem 0.7rem;
+      font-size: 1.3rem;
+    }
+
+    .step-note {
+      margin-top: 0.4rem;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Hatványkifejezés-generátor</h1>
+    </header>
+
+    <div class="card">
+      <div class="controls">
+        <div id="levels" class="levels" role="radiogroup" aria-label="Szint"></div>
+        <button id="generateBtn" class="primary">Új szám generálása</button>
+        <button id="fillBtn">Megoldás</button>
+      </div>
+      <div id="formulaDisplay" class="formula-box" aria-live="polite"></div>
+    </div>
+
+    <div class="card">
+      <h2 class="answer-title">Saját válasz</h2>
+      <p class="answer-hint">Írd fel az eredményt kanonikus alakban: a prímek növekvő sorrendben, utána a betűk. Ha egy alap nem szerepel, hagyd üresen (vagy írj 0-t).</p>
+      <div id="answerRow" class="answer-row"></div>
+      <div class="answer-actions">
+        <div class="answer-buttons">
+          <button id="checkBtn" class="primary">Ellenőrzés</button>
+        </div>
+        <div id="feedback" class="feedback" role="status" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="solution-header">
+        <h2>Lépésről lépésre megoldás</h2>
+        <button id="toggleSolutionBtn" aria-controls="solutionContent" aria-expanded="false">Megoldás mutatása</button>
+      </div>
+      <div id="solutionContent" class="steps hidden"></div>
+    </div>
+  </div>
+
+  <script>
+    // ---------- Beállítások ----------
+    const EXP_MIN = -5;
+    const EXP_MAX = 5;
+    const MINUS = "\u2212";
+    const NBSP = "\u00A0";
+
+    const LEVELS = {
+      1: {
+        numberBases: [2, 3, 5, 7],
+        factorsPerGroup: 1,
+        answerBases: [2, 3, 5, 7],
+      },
+      2: {
+        numberBases: [2, 3, 5, 7],
+        factorsPerGroup: 2,
+        answerBases: [2, 3, 5, 7],
+      },
+      // (a · b^n1)^n2 – egyetlen zárójel, nincs nevező; a = összetett szám, b = betű
+      3: {
+        single: true,
+        numberBases: [4, 6, 8, 10, 12, 14, 16],
+        answerBases: [2, 3, 5, 7, "b"],
+      },
+    };
+
+    let state = { level: 1, problem: null, solution: null };
+
+    // ---------- Segédfüggvények ----------
+    const $ = (id) => document.getElementById(id);
+
+    function randInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function pick(list) {
+      return list[randInt(0, list.length - 1)];
+    }
+
+    const isLetter = (base) => typeof base === "string";
+
+    // Kanonikus sorrend: előbb a számok növekvően, utána a betűk betűrendben
+    function compareBases(x, y) {
+      if (isLetter(x) !== isLetter(y)) return isLetter(x) ? 1 : -1;
+      return isLetter(x) ? x.localeCompare(y) : x - y;
+    }
+
+    // Prímtényezős felbontás: 12 -> [[2, 2], [3, 1]]
+    function factorize(n) {
+      const result = [];
+      for (let p = 2; n > 1; p++) {
+        let k = 0;
+        while (n % p === 0) {
+          n /= p;
+          k++;
+        }
+        if (k > 0) result.push([p, k]);
+      }
+      return result;
+    }
+
+    function isComposite(n) {
+      const f = factorize(n);
+      return f.length > 1 || (f.length === 1 && f[0][1] > 1);
+    }
+
+    // ---------- Formázás (magyar konvenciók, valódi mínusz) ----------
+    function fmtInt(n) {
+      return n < 0 ? MINUS + Math.abs(n) : String(n);
+    }
+
+    // Negatív kitevő zárójelben: pl. (−2)
+    function wrapNeg(n) {
+      return n < 0 ? `(${fmtInt(n)})` : String(n);
+    }
+
+    // ---------- HTML-építők ----------
+    const DOT = " &middot; ";
+
+    function baseHTML(base) {
+      return isLetter(base) ? `<i>${base}</i>` : String(base);
+    }
+
+    function power(base, exp) {
+      return `${baseHTML(base)}<sup>${fmtInt(exp)}</sup>`;
+    }
+
+    function fraction(top, bottom) {
+      return `<span class="fraction"><span class="numerator">${top}</span><span class="denominator">${bottom}</span></span>`;
+    }
+
+    function expr(html) {
+      return `<span class="expr">${html}</span>`;
+    }
+
+    function eqSign(sign = "=") {
+      return `<span class="eq-sign">${sign}</span>`;
+    }
+
+    function equation(parts) {
+      return parts.map(expr).join(eqSign());
+    }
+
+
+    // ---------- Feladat és megoldás ----------
+    // Egy feladat egy vagy két csoportból áll (számláló, nevező): { factors: [{ base, exp }], outer }
+    // 1–2. szint: (x1^e1 [· x2^e2])^outer / (…)^outer
+    // 3. szint:   (a · b^e)^outer, ahol a = összetett szám (kitevő nélkül), b = betű
+    function createGroup(cfg) {
+      if (cfg.single) {
+        return {
+          factors: [
+            { base: pick(cfg.numberBases), exp: 1, plain: true },
+            { base: "b", exp: randInt(EXP_MIN, EXP_MAX) },
+          ],
+          outer: randInt(EXP_MIN, EXP_MAX),
+        };
+      }
+      const factors = Array.from({ length: cfg.factorsPerGroup }, () => ({
+        base: pick(cfg.numberBases),
+        exp: randInt(EXP_MIN, EXP_MAX),
+      }));
+      return { factors, outer: randInt(EXP_MIN, EXP_MAX) };
+    }
+
+    function solve(problem) {
+      const mapped = problem.groups.map((g) => ({
+        outer: g.outer,
+        factors: g.factors.map((f) => ({ base: f.base, inner: f.exp, plain: f.plain, exp: f.exp * g.outer })),
+      }));
+      const [num, den] = mapped;
+
+      // A nevező tagjai a szorzatba kerülnek, ellentett kitevővel
+      const flipped = [
+        ...num.factors.map((t) => ({ base: t.base, exp: t.exp })),
+        ...(den ? den.factors : []).map((t) => ({ base: t.base, exp: -t.exp })),
+      ];
+
+      // Összetett számalapok felbontása prímekre
+      const primeTerms = flipped.flatMap((t) =>
+        isLetter(t.base)
+          ? [t]
+          : factorize(t.base).map(([p, k]) => ({ base: p, exp: k * t.exp }))
+      );
+
+      const totals = new Map();
+      for (const { base, exp } of primeTerms) {
+        totals.set(base, (totals.get(base) ?? 0) + exp);
+      }
+
+      return { groups: mapped, flipped, primeTerms, totals };
+    }
+
+    // Új feladat; az 1-et eredményező (triviális) feladatokat eldobja
+    function createProblem(level) {
+      const cfg = LEVELS[level];
+      for (;;) {
+        const groups = cfg.single ? [createGroup(cfg)] : [createGroup(cfg), createGroup(cfg)];
+
+        const problem = { level, groups };
+        const solution = solve(problem);
+        if ([...solution.totals.values()].some((e) => e !== 0)) {
+          return { problem, solution };
+        }
+      }
+    }
+
+    // ---------- Megjelenítés ----------
+    function groupHTML(g) {
+      const inner = g.factors.map((f) => (f.plain ? baseHTML(f.base) : power(f.base, f.exp))).join(DOT);
+      return `(${inner})<sup>${fmtInt(g.outer)}</sup>`;
+    }
+
+    function renderFormula(problem) {
+      const [num, den] = problem.groups;
+      $("formulaDisplay").innerHTML = den ? fraction(groupHTML(num), groupHTML(den)) : groupHTML(num);
+    }
+
+    function buildSteps(level, solution) {
+      const { groups: [num, den], flipped, primeTerms, totals } = solution;
+      const steps = [];
+
+      // 1. Zárójelek felbontása
+      const written = (g) =>
+        g.factors
+          .map((f) =>
+            f.plain
+              ? `${baseHTML(f.base)}<sup>${fmtInt(g.outer)}</sup>`
+              : `${baseHTML(f.base)}<sup>${wrapNeg(f.inner)}&middot;${wrapNeg(g.outer)}</sup>`
+          )
+          .join(DOT);
+      const computed = (g) => g.factors.map((f) => power(f.base, f.exp)).join(DOT);
+      const computedFraction = den ? fraction(computed(num), computed(den)) : computed(num);
+
+      steps.push({
+        title:
+          level === 1
+            ? "Zárójelek felbontása: (x<sup>m</sup>)<sup>k</sup> = x<sup>m&middot;k</sup>"
+            : "Zárójelek felbontása: (x &middot; y)<sup>k</sup> = x<sup>k</sup> &middot; y<sup>k</sup> és (x<sup>m</sup>)<sup>k</sup> = x<sup>m&middot;k</sup>",
+        rows: [equation([den ? fraction(written(num), written(den)) : written(num), computedFraction])],
+      });
+
+      // 2. A nevező kitevőinek átfordítása
+      if (den) steps.push({
+        title: "A nevező kitevőinek átfordítása: 1 / x<sup>k</sup> = x<sup>&minus;k</sup>",
+        rows: [equation([computedFraction, flipped.map((t) => power(t.base, t.exp)).join(DOT)])],
+      });
+
+      // 3. Összetett alapok felbontása (csak ha van ilyen)
+      const composites = flipped.filter((t) => !isLetter(t.base) && isComposite(t.base));
+      if (composites.length > 0) {
+        steps.push({
+          title: "Összetett alapok felbontása prímtényezőkre",
+          rows: composites.map(({ base, exp }) => {
+            const f = factorize(base);
+            const decomposed = f.map(([p, k]) => (k === 1 ? String(p) : `${p}<sup>${k}</sup>`)).join(DOT);
+            return equation([
+              power(base, exp),
+              `(${decomposed})<sup>${fmtInt(exp)}</sup>`,
+              f.map(([p, k]) => power(p, k * exp)).join(DOT),
+            ]);
+          }),
+          note: "Itt is érvényes: (x &middot; y)<sup>k</sup> = x<sup>k</sup> &middot; y<sup>k</sup> és (x<sup>m</sup>)<sup>k</sup> = x<sup>m&middot;k</sup>.",
+        });
+      }
+
+      // 4. Közös alapok összevonása
+      const order = [...totals.keys()].sort(compareBases);
+      const merged = order
+        .map((b) => {
+          const exps = primeTerms.filter((t) => t.base === b).map((t) => t.exp);
+          return exps.length === 1
+            ? power(b, exps[0])
+            : `${baseHTML(b)}<sup>${exps.map(wrapNeg).join(" + ")}</sup>`;
+        })
+        .join(DOT);
+      const values = order
+        .map((b) => `<span${totals.get(b) === 0 ? ' class="zero"' : ""}>${power(b, totals.get(b))}</span>`)
+        .join(DOT);
+
+      if (!LEVELS[level].single) {
+        steps.push({
+          title: "Közös alapok összevonása: x<sup>m</sup> &middot; x<sup>k</sup> = x<sup>m+k</sup>",
+          rows: [equation([merged, values])],
+          note: order.some((b) => totals.get(b) === 0)
+            ? "A 0 kitevőjű tényező értéke 1 (x<sup>0</sup> = 1), ezért a végeredményből elhagyjuk."
+            : "",
+        });
+      }
+
+      // 5. Végeredmény kanonikus alakban
+      const nonZero = order.filter((b) => totals.get(b) !== 0);
+      const canonical = nonZero.map((b) => power(b, totals.get(b))).join(DOT);
+      steps.push({
+        title: "Végeredmény kanonikus alakban",
+        rows: [`<span class="final">${canonical}</span>`],
+        note: "Előbb a számalapok (prímek) növekvő sorrendben, utána a betűalapok; a 0 kitevőjű tényezők nem szerepelnek.",
+      });
+
+      return steps;
+    }
+
+    function renderSteps(steps) {
+      $("solutionContent").innerHTML = steps
+        .map(
+          (s, i) => `<div class="step">
+            <div class="step-title">${i + 1}. ${s.title}</div>
+            ${s.rows.map((r) => `<div class="step-math">${r}</div>`).join("")}
+            ${s.note ? `<div class="step-note">${s.note}</div>` : ""}
+          </div>`
+        )
+        .join("");
+    }
+
+    function renderAll() {
+      renderFormula(state.problem);
+      renderSteps(buildSteps(state.level, state.solution));
+    }
+
+    // ---------- Saját válasz ----------
+    function buildAnswerFields() {
+      $("answerRow").innerHTML = LEVELS[state.level].answerBases
+        .map(
+          (b) => `<label class="ans-field">${baseHTML(b)}<input class="ans-input" type="text" inputmode="text"
+            autocomplete="off" maxlength="4" data-base="${b}" aria-label="A(z) ${b} kitevője"></label>`
+        )
+        .join(DOT);
+    }
+
+    function answerInputs() {
+      return Array.from(document.querySelectorAll(".ans-input"));
+    }
+
+    function clearAnswers() {
+      for (const input of answerInputs()) {
+        input.value = "";
+        input.classList.remove("ok", "bad");
+      }
+      setFeedback("", "");
+    }
+
+    function setFeedback(text, kind) {
+      const el = $("feedback");
+      el.textContent = text;
+      el.className = "feedback" + (kind ? " " + kind : "");
+    }
+
+    // A mínusz bármelyik gyakori alakját elfogadja (-, −, –)
+    function parseExponent(text) {
+      const s = text.trim().replace(/[−–—]/g, "-");
+      return /^[+-]?\d+$/.test(s) ? parseInt(s, 10) : null;
+    }
+
+    function inputBase(input) {
+      const raw = input.dataset.base;
+      return Number.isNaN(Number(raw)) ? raw : Number(raw);
+    }
+
+    function checkAnswer() {
+      const inputs = answerInputs();
+      const parsed = inputs.map((input) => ({ input, raw: input.value.trim() }));
+      for (const { input } of parsed) input.classList.remove("ok", "bad");
+
+      if (parsed.every(({ raw }) => raw === "")) {
+        setFeedback("Írj be legalább egy kitevőt!", "bad");
+        return;
+      }
+
+      // Az üresen hagyott mező 0-nak számít
+      const valueOf = (raw) => (raw === "" ? 0 : parseExponent(raw));
+
+      const invalid = parsed.filter(({ raw }) => valueOf(raw) === null);
+      if (invalid.length > 0) {
+        for (const { input } of invalid) input.classList.add("bad");
+        setFeedback(`Csak egész számot írj be, pl. ${MINUS}3 vagy 2.`, "bad");
+        return;
+      }
+
+      let correct = 0;
+      for (const { input, raw } of parsed) {
+        const expected = state.solution.totals.get(inputBase(input)) ?? 0;
+        const ok = valueOf(raw) === expected;
+        input.classList.add(ok ? "ok" : "bad");
+        if (ok) correct++;
+      }
+
+      if (correct === inputs.length) {
+        setFeedback("Helyes! Minden kitevő jó.", "ok");
+      } else {
+        setFeedback(`${correct} / ${inputs.length} kitevő jó. Nézd át a pirossal jelölteket!`, "bad");
+      }
+    }
+
+    // A helyes kitevőket beírja a mezőkbe
+    function fillAnswer() {
+      for (const input of answerInputs()) {
+        input.value = fmtInt(state.solution.totals.get(inputBase(input)) ?? 0);
+        input.classList.remove("bad");
+        input.classList.add("ok");
+      }
+      setFeedback("A helyes megoldás beírva.", "ok");
+    }
+
+    // ---------- Vezérlés ----------
+    function generate() {
+      state = { level: state.level, ...createProblem(state.level) };
+      renderAll();
+      clearAnswers();
+      const first = answerInputs()[0];
+      if (first) first.focus();
+    }
+
+    function setLevel(level) {
+      state.level = level;
+      for (const btn of $("levels").children) {
+        btn.setAttribute("aria-checked", String(Number(btn.dataset.level) === level));
+      }
+      buildAnswerFields();
+      generate();
+    }
+
+    function toggleSolution(event) {
+      const hidden = $("solutionContent").classList.toggle("hidden");
+      event.currentTarget.textContent = hidden ? "Megoldás mutatása" : "Megoldás elrejtése";
+      event.currentTarget.setAttribute("aria-expanded", String(!hidden));
+    }
+
+    function init() {
+      $("levels").innerHTML = Object.keys(LEVELS)
+        .map((l) => `<button type="button" role="radio" aria-checked="false" data-level="${l}">${l}. szint</button>`)
+        .join("");
+      $("levels").addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-level]");
+        if (btn) setLevel(Number(btn.dataset.level));
+      });
+
+      $("generateBtn").addEventListener("click", generate);
+      $("checkBtn").addEventListener("click", checkAnswer);
+      $("fillBtn").addEventListener("click", fillAnswer);
+      $("toggleSolutionBtn").addEventListener("click", toggleSolution);
+      $("answerRow").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") checkAnswer();
+      });
+
+      setLevel(1);
+    }
+
+    init();
+  </script>
+</body>
+</html>
