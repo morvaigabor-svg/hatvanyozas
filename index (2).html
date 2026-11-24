@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hatványkifejezés-generátor</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --accent-bg: #eff6ff;
+      --success: #16a34a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    h1 {
+      font-size: 1.65rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+
+    header p {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+      margin-bottom: 1.25rem;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    button {
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-radius: 8px;
+      padding: 0.6rem 1.1rem;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      transition: all 0.15s ease;
+    }
+
+    button:hover {
+      background: #f1f5f9;
+    }
+
+    button.primary {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    button.primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .toggles {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      font-size: 0.875rem;
+    }
+
+    .toggles label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* Math Display */
+    .formula-box {
+      background: var(--accent-bg);
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 1.75rem 1rem;
+      text-align: center;
+      font-size: 1.55rem;
+      font-family: "Cambria Math", "Times New Roman", serif;
+      overflow-x: auto;
+      margin-bottom: 1.25rem;
+    }
+
+    .fraction {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      vertical-align: middle;
+    }
+
+    .numerator {
+      border-bottom: 2px solid var(--text);
+      padding: 0 0.6rem 0.25rem;
+    }
+
+    .denominator {
+      padding: 0.25rem 0.6rem 0;
+    }
+
+    sup {
+      font-size: 0.68em;
+      line-height: 0;
+    }
+
+    /* Parameters Grid */
+    .params-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .param-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem;
+      font-size: 0.875rem;
+    }
+
+    .param-box strong {
+      display: block;
+      color: var(--muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.2rem;
+    }
+
+    /* Solution Steps */
+    .solution-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .solution-header h2 {
+      font-size: 1.1rem;
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .step {
+      padding: 0.85rem 1rem;
+      border-left: 3px solid var(--primary);
+      background: var(--bg);
+      border-radius: 0 8px 8px 0;
+    }
+
+    .step-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+
+    .step-math {
+      font-family: "Cambria Math", "Times New Roman", serif;
+      font-size: 1.2rem;
+      overflow-x: auto;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .toast {
+      color: var(--success);
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-left: 0.5rem;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Hatványkifejezés-generátor</h1>
+      <p>Alapok: {2, 3, 5, 7} &bull; Kitevők: [-5, 5] közötti egész számok</p>
+    </header>
+
+    <div class="card">
+      <div class="controls">
+        <div class="btn-group">
+          <button id="generateBtn" class="primary">Új szám generálása</button>
+          <button id="copyBtn">Képlet másolása</button>
+          <span id="copyToast" class="toast">Másolva!</span>
+        </div>
+
+        <div class="toggles">
+          <label>
+            <input type="checkbox" id="useN4Toggle" checked>
+            Nevező külső kitevője n<sub>4</sub> legyen (különben n<sub>3</sub>)
+          </label>
+          <label>
+            <input type="checkbox" id="allowDupesToggle">
+            Alapok ismétlődhetnek
+          </label>
+        </div>
+      </div>
+
+      <div id="formulaDisplay" class="formula-box"></div>
+
+      <div class="params-grid">
+        <div class="param-box">
+          <strong>Alapok (a, b, c, d)</strong>
+          <span id="basesText"></span>
+        </div>
+        <div class="param-box">
+          <strong>Kitevők (n<sub>1</sub>, n<sub>2</sub>, n<sub>3</sub>, n<sub>4</sub>)</strong>
+          <span id="exponentsText"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="solution-header">
+        <h2>Lépésről lépésre megoldás</h2>
+        <button id="toggleSolutionBtn">Megoldás elrejtése</button>
+      </div>
+
+      <div id="solutionContent" class="steps">
+        <div class="step">
+          <div class="step-title">1. Zárójelek felbontása: (x<sup>m</sup>)<sup>k</sup> = x<sup>m&middot;k</sup></div>
+          <div id="step1Math" class="step-math"></div>
+        </div>
+
+        <div class="step">
+          <div class="step-title">2. Prímtényezős alak: 2<sup>x</sup> &middot; 3<sup>y</sup> &middot; 5<sup>z</sup> &middot; 7<sup>w</sup></div>
+          <div id="step2Math" class="step-math"></div>
+        </div>
+
+        <div class="step">
+          <div class="step-title">3. Pontos egyszerűsített tört és közelítő érték</div>
+          <div id="step3Math" class="step-math"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const PRIMES = [2, 3, 5, 7];
+    let currentPlainFormula = "";
+
+    function randInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function pickBases(allowDupes) {
+      if (allowDupes) {
+        return {
+          a: PRIMES[randInt(0, 3)],
+          b: PRIMES[randInt(0, 3)],
+          c: PRIMES[randInt(0, 3)],
+          d: PRIMES[randInt(0, 3)]
+        };
+      }
+      const shuffled = [...PRIMES].sort(() => Math.random() - 0.5);
+      return {
+        a: shuffled[0],
+        b: shuffled[1],
+        c: shuffled[2],
+        d: shuffled[3]
+      };
+    }
+
+    function bigIntPow(base, exp) {
+      let result = 1n;
+      const b = BigInt(base);
+      for (let i = 0; i < exp; i++) {
+        result *= b;
+      }
+      return result;
+    }
+
+    function formatBigInt(n) {
+      return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+    }
+
+    function generate() {
+      const useN4 = document.getElementById("useN4Toggle").checked;
+      const allowDupes = document.getElementById("allowDupesToggle").checked;
+
+      const { a, b, c, d } = pickBases(allowDupes);
+      let n1 = randInt(-5, 5);
+      let n2 = randInt(-5, 5);
+      let n3 = randInt(-5, 5);
+      let n4 = useN4 ? randInt(-5, 5) : n3;
+
+      // Kerüljük el, hogy minden kitevő egyszerre 0 legyen
+      if (n1 === 0 && n2 === 0 && n3 === 0 && n4 === 0) {
+        n1 = 2;
+        n3 = 1;
+      }
+
+      const outerDenomExp = useN4 ? n4 : n3;
+
+      // Megjelenítés frissítése
+      document.getElementById("formulaDisplay").innerHTML = `
+        <div class="fraction">
+          <div class="numerator">(${a}<sup>${n1}</sup> &middot; ${b}<sup>${n2}</sup>)<sup>${n3}</sup></div>
+          <div class="denominator">(${c}<sup>${n1}</sup> &middot; ${d}<sup>${n2}</sup>)<sup>${outerDenomExp}</sup></div>
+        </div>
+      `;
+
+      currentPlainFormula = `(${a}^${n1} * ${b}^${n2})^${n3} / (${c}^${n1} * ${d}^${n2})^${outerDenomExp}`;
+
+      document.getElementById("basesText").textContent = `a = ${a}, b = ${b}, c = ${c}, d = ${d}`;
+      document.getElementById("exponentsText").innerHTML = useN4
+        ? `n<sub>1</sub>=${n1}, n<sub>2</sub>=${n2}, n<sub>3</sub>=${n3}, n<sub>4</sub>=${n4}`
+        : `n<sub>1</sub>=${n1}, n<sub>2</sub>=${n2}, n<sub>3</sub>=${n3} (szimmetrikus)`;
+
+      // 1. lépés: Zárójelek felbontása
+      const numExp1 = n1 * n3;
+      const numExp2 = n2 * n3;
+      const denExp1 = n1 * outerDenomExp;
+      const denExp2 = n2 * outerDenomExp;
+
+      document.getElementById("step1Math").innerHTML = `
+        <div class="fraction">
+          <div class="numerator">${a}<sup>${numExp1}</sup> &middot; ${b}<sup>${numExp2}</sup></div>
+          <div class="denominator">${c}<sup>${denExp1}</sup> &middot; ${d}<sup>${denExp2}</sup></div>
+        </div>
+      `;
+
+      // 2. lépés: Prímtényezők összevonása
+      const primeExps = { 2: 0, 3: 0, 5: 0, 7: 0 };
+      primeExps[a] += numExp1;
+      primeExps[b] += numExp2;
+      primeExps[c] -= denExp1;
+      primeExps[d] -= denExp2;
+
+      const primeParts = PRIMES.map(p => `${p}<sup>${primeExps[p]}</sup>`);
+      document.getElementById("step2Math").innerHTML = primeParts.join(" &middot; ");
+
+      // 3. lépés: Pontos tört kiszámítása BigInt-tel
+      let numerator = 1n;
+      let denominator = 1n;
+
+      for (const p of PRIMES) {
+        const exp = primeExps[p];
+        if (exp > 0) {
+          numerator *= bigIntPow(p, exp);
+        } else if (exp < 0) {
+          denominator *= bigIntPow(p, -exp);
+        }
+      }
+
+      const decimalVal =
+        Math.pow(2, primeExps[2]) *
+        Math.pow(3, primeExps[3]) *
+        Math.pow(5, primeExps[5]) *
+        Math.pow(7, primeExps[7]);
+
+      const decimalStr = Number.isFinite(decimalVal)
+        ? decimalVal.toPrecision(6).replace(/\.?0+$/, "")
+        : "túl nagy/kicsi lebegőpontos ábrázoláshoz";
+
+      const fractionHTML = denominator === 1n
+        ? `<strong>${formatBigInt(numerator)}</strong>`
+        : `<div class="fraction">
+             <div class="numerator">${formatBigInt(numerator)}</div>
+             <div class="denominator">${formatBigInt(denominator)}</div>
+           </div>`;
+
+      document.getElementById("step3Math").innerHTML = `
+        ${fractionHTML} &nbsp;&approx;&nbsp; <span>${decimalStr}</span>
+      `;
+    }
+
+    // Eseménykezelők
+    document.getElementById("generateBtn").addEventListener("click", generate);
+    document.getElementById("useN4Toggle").addEventListener("change", generate);
+    document.getElementById("allowDupesToggle").addEventListener("change", generate);
+
+    document.getElementById("toggleSolutionBtn").addEventListener("click", (e) => {
+      const content = document.getElementById("solutionContent");
+      const isHidden = content.classList.toggle("hidden");
+      e.target.textContent = isHidden ? "Megoldás mutatása" : "Megoldás elrejtése";
+    });
+
+    document.getElementById("copyBtn").addEventListener("click", () => {
+      navigator.clipboard.writeText(currentPlainFormula).then(() => {
+        const toast = document.getElementById("copyToast");
+        toast.classList.add("show");
+        setTimeout(() => toast.classList.remove("show"), 1800);
+      });
+    });
+
+    // Első betöltés
+    generate();
+  </script>
+</body>
+</html>
